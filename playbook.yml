@@ -1,0 +1,8 @@
+---
+- name: Provision a new server
+  hosts: all
+  become: true
+
+  roles:
+    - webserver
+    - users

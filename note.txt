@@ -1,0 +1,12 @@
+ansible-project/
+├── inventory.yml
+├── playbook.yml
+└── roles/
+    ├── webserver/
+    │   ├── tasks/
+    │   │   └── main.yml
+    │   └── templates/
+    │       └── index.html
+    └── users/
+        └── tasks/
+            └── main.yml
