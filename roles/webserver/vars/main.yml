@@ -1,0 +1,3 @@
+# Variables for the webserver role
+apache_port: 8080
+conflicting_service: nginx

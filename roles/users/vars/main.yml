@@ -1,0 +1,6 @@
+# Variables for the users role
+users:
+  - name: "user1"
+    password: "password123"
+  - name: "user2"
+    password: "password456"

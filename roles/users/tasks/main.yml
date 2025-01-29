@@ -4,9 +4,7 @@
     name: "{{ item.name }}"
     password: "{{ item.password | password_hash('sha512') }}"
     state: present
-  with_items:
-    - { name: "user1", password: "password123" }
-    - { name: "user2", password: "password456" }
+  with_items: "{{ users }}"
 
 - name: Set permissions for users
   file:
@@ -15,6 +13,31 @@
     owner: "{{ item.name }}"
     group: "{{ item.name }}"
     mode: '0750'
-  with_items:
-    - { name: "user1" }
-    - { name: "user2" }
+  with_items: "{{ users }}"
+
+
+
+
+
+
+
+# ---
+# - name: Create users
+#   user:
+#     name: "{{ item.name }}"
+#     password: "{{ item.password | password_hash('sha512') }}"
+#     state: present
+#   with_items:
+#     - { name: "user1", password: "password123" }
+#     - { name: "user2", password: "password456" }
+
+# - name: Set permissions for users
+#   file:
+#     path: "/home/{{ item.name }}"
+#     state: directory
+#     owner: "{{ item.name }}"
+#     group: "{{ item.name }}"
+#     mode: '0750'
+#   with_items:
+#     - { name: "user1" }
+#     - { name: "user2" }
