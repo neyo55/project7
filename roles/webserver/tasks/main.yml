@@ -1,20 +1,81 @@
----
-- name: Install web server
-  apt:
-    name: apache2
-    state: present
-    update_cache: yes
+# # This script checks if port 80 is in use and if yes it kills the service using it and makes apache listen on port 80
 
-- name: Ensure the web server is started and enabled
+# ---
+# - name: Install web server
+#   apt:
+#     name: apache2
+#     state: present
+#     update_cache: yes
+
+# - name: Ensure the web server is started and enabled
+#   service:
+#     name: apache2
+#     state: started
+#     enabled: true
+
+# - name: Deploy default index.html
+#   template:
+#     src: index.html
+#     dest: /var/www/html/index.html
+#     owner: www-data
+#     group: www-data
+#     mode: '0644'
+
+# - name: Check if port 80 is in use
+#   shell: netstat -tuln | grep ':80' || true
+#   register: port_80_check
+#   changed_when: false
+
+# - name: Stop conflicting service on port 80
+#   when: port_80_check.stdout != ""
+#   service:
+#     name: nginx
+#     state: stopped
+#   ignore_errors: true
+
+# - name: Restart Apache
+#   service:
+#     name: apache2
+#     state: restarted
+
+
+
+
+# this scripts changes from port 80 to 8080 if port 80 is in use
+
+
+- name: Check if port 80 is in use
+  shell: netstat -tuln | grep ':80' || true
+  register: port_80_check
+  changed_when: false
+
+- name: Stop conflicting service on port 80
+  when: port_80_check.stdout != ""
   service:
-    name: apache2
-    state: started
-    enabled: true
+    name: nginx
+    state: stopped
+  ignore_errors: true
 
-- name: Deploy default index.html
-  template:
-    src: index.html
-    dest: /var/www/html/index.html
-    owner: www-data
-    group: www-data
-    mode: '0644'
+- name: Update Apache to listen on port 8080 if necessary
+  when: port_80_check.stdout != ""
+  block:
+    - name: Update Apache to listen on port 8080
+      lineinfile:
+        path: /etc/apache2/ports.conf
+        regexp: "^Listen 80"
+        line: "Listen 8080"
+        state: present
+
+    - name: Update default site configuration
+      lineinfile:
+        path: /etc/apache2/sites-enabled/000-default.conf
+        regexp: "<VirtualHost \\*:80>"
+        line: "<VirtualHost *:8080>"
+        state: present
+
+    - name: Restart Apache to apply changes
+      service:
+        name: apache2
+        state: restarted
+
+
