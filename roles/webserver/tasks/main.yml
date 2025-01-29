@@ -41,41 +41,67 @@
 
 
 
-# this scripts changes from port 80 to 8080 if port 80 is in use
+# This script changes Apache from port 80 to 8080 if port 80 is in use
 
+- name: Install net-tools (for netstat)
+  apt:
+    name: net-tools
+    state: present
+    update_cache: yes
 
 - name: Check if port 80 is in use
-  shell: netstat -tuln | grep ':80' || true
+  shell: ss -tuln | grep ':80' || true
   register: port_80_check
   changed_when: false
 
 - name: Stop conflicting service on port 80
-  when: port_80_check.stdout != ""
+  when: port_80_check.stdout | length > 0
   service:
     name: nginx
     state: stopped
   ignore_errors: true
 
-- name: Update Apache to listen on port 8080 if necessary
-  when: port_80_check.stdout != ""
-  block:
-    - name: Update Apache to listen on port 8080
-      lineinfile:
-        path: /etc/apache2/ports.conf
-        regexp: "^Listen 80"
-        line: "Listen 8080"
-        state: present
+- name: Update Apache to listen on port 8080
+  when: port_80_check.stdout | length > 0
+  lineinfile:
+    path: /etc/apache2/ports.conf
+    regexp: "^Listen 80"
+    line: "Listen 8080"
+    state: present
 
-    - name: Update default site configuration
-      lineinfile:
-        path: /etc/apache2/sites-enabled/000-default.conf
-        regexp: "<VirtualHost \\*:80>"
-        line: "<VirtualHost *:8080>"
-        state: present
+- name: Update default site configuration
+  when: port_80_check.stdout | length > 0
+  lineinfile:
+    path: /etc/apache2/sites-enabled/000-default.conf
+    regexp: "<VirtualHost \\*:80>"
+    line: "<VirtualHost *:8080>"
+    state: present
 
-    - name: Restart Apache to apply changes
-      service:
-        name: apache2
-        state: restarted
+- name: Restart Apache to apply changes
+  when: port_80_check.stdout | length > 0
+  service:
+    name: apache2
+    state: restarted
 
+# Ensure Apache is running before deploying the custom index.html
+- name: Ensure Apache is started
+  service:
+    name: apache2
+    state: started
+    enabled: yes
 
+# Deploy the custom index.html file
+- name: Deploy custom index.html
+  copy:
+    src: index.html
+    dest: /var/www/html/index.html
+    owner: www-data
+    group: www-data
+    mode: '0644'
+  notify: Restart Apache
+
+# Restart Apache to ensure changes take effect
+- name: Restart Apache to serve new index.html
+  service:
+    name: apache2
+    state: restarted
